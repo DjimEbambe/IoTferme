@@ -1,0 +1,20 @@
+@startuml
+actor Device
+participant "ESP32 Gateway" as GW
+participant "Edge Agent" as Edge
+participant "MQTT Broker" as MQTT
+
+Device -> GW : ESP-NOW telemetry (CBOR)
+GW -> Edge : USB CDC (CBOR/COBS)
+Edge -> Edge : Store SQLite queue_out
+Edge -> MQTT : Publish QoS1 telemetry
+MQTT -> Edge : PUBACK
+Edge -> Edge : Mark queue acked
+
+MQTT -> Edge : Command message
+Edge -> GW : USB CMD (correlation_id)
+GW -> Device : ESP-NOW CMD
+Device -> GW : ACK
+GW -> Edge : USB ACK
+Edge -> MQTT : Publish ACK
+@enduml

@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: FarmStack Web Gateway API
+  version: 0.1.0
+  description: >
+    API façade exposant les KPI, séries temporelles et commandes pour la ferme avicole FarmStack.
+servers:
+  - url: https://farmstack.local
+paths:
+  /api/kpi:
+    get:
+      summary: Récupérer un snapshot KPI
+      parameters:
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [site, building, zone, lot]
+          required: true
+        - in: query
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Snapshot KPI
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kpis:
+                    type: object
+                  resources:
+                    type: array
+                    items:
+                      type: object
+        '403':
+          description: Accès refusé
+  /api/series:
+    get:
+      summary: Séries temporelles Influx
+      parameters:
+        - in: query
+          name: metric
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: asset_id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: range
+          schema:
+            type: string
+            default: 24h
+      responses:
+        '200':
+          description: Série temporelle
+  /api/cmd:
+    post:
+      summary: Publier une commande IoT
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [site, device, asset_id]
+              properties:
+                site:
+                  type: string
+                device:
+                  type: string
+                asset_id:
+                  type: string
+                relays:
+                  type: object
+                setpoints:
+                  type: object
+      responses:
+        '200':
+          description: Commande acceptée
+        '400':
+          description: Erreur de validation
+  /api/ml/anomaly:
+    post:
+      summary: Proxy anomalie ML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Réponse ML
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid

@@ -1,0 +1,25 @@
+<div class="d-flex justify-content-center py-5">
+  <div class="glass-panel shadow-soft" style="max-width: 520px; width:100%;">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="status-pill" data-state="offline">
+        <span class="indicator"></span>
+        <span class="label">Incident</span>
+      </div>
+      <div>
+        <h1 class="h3 mb-0">Erreur <%= status %></h1>
+        <small class="text-secondary">Code : <%= code || 'SERVER_ERROR' %></small>
+      </div>
+    </div>
+    <p class="lead mb-3"><%= message %></p>
+    <% if (requestId) { %>
+    <p class="small text-secondary">Identifiant requête : <code><%= requestId %></code></p>
+    <% } %>
+    <% if (stack) { %>
+    <pre class="bg-dark-subtle text-dark p-3 rounded-4 small"><%= stack %></pre>
+    <% } %>
+    <div class="d-flex gap-2 mt-4">
+      <a href="/" class="btn-soft">Retour au tableau de bord</a>
+      <a href="mailto:ops@farmstack.local?subject=Incident%20<%= requestId || '' %>" class="btn btn-outline-light">Reporter</a>
+    </div>
+  </div>
+</div>

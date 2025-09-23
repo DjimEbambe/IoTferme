@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title ? title + ' — ' : '' %>FarmStack Kinshasa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-" crossorigin="anonymous">
+  <% const mainCss = asset('main.css'); if (mainCss) { %>
+  <link rel="stylesheet" href="<%= mainCss %>">
+  <% } %>
+</head>
+<body class="app-shell">
+  <div class="app-backdrop"></div>
+  <nav class="app-navbar navbar navbar-expand-lg px-3 px-lg-5">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <span class="brand-logo">🐣</span>
+        <div>
+          <div class="fw-semibold">FarmStack</div>
+          <small class="text-secondary">Ferme Kinshasa</small>
+        </div>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-lg-4 me-auto app-nav-tabs">
+          <li class="nav-item"><a class="nav-link" data-nav="dashboard" href="/">Tableau de bord</a></li>
+          <li class="nav-item"><a class="nav-link" data-nav="erp" href="/erp">ERP</a></li>
+          <li class="nav-item"><a class="nav-link" data-nav="twins" href="/twins">Jumeau 3D</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-3 app-toolbar">
+          <div class="d-none d-lg-flex flex-column text-end">
+            <small class="text-secondary">Fuseau horaire</small>
+            <span class="fw-medium" id="tzClock">Africa/Kinshasa</span>
+          </div>
+          <div class="status-pill" id="realtimeStatus" data-state="idle">
+            <span class="indicator"></span>
+            <span class="label">Temps réel</span>
+          </div>
+          <button class="btn btn-outline-light btn-sm" id="themeToggle" type="button">
+            <i class="bi bi-moon-stars"></i>
+          </button>
+          <% if (user) { %>
+          <div class="dropdown">
+            <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
+              <i class="bi bi-person-circle me-1"></i><%= user.displayName || user.email %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li class="dropdown-header text-muted small">Profil</li>
+              <li><span class="dropdown-item-text small"><i class="bi bi-shield-lock me-2"></i><%= (user.roles || []).join(', ') %></span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="post" action="/logout">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Quitter</button>
+                </form>
+              </li>
+            </ul>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="app-main container-xxl py-4 py-lg-5">
+    <%- body %>
+  </main>
+
+  <footer class="app-footer text-center py-3 text-secondary">
+    <small>© <%= new Date().getFullYear() %> Ferme Avicole Goliath • SLA Télémetrie p95 ≤ 2s • Propulsé par FarmStack</small>
+  </footer>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastStack"></div>
+
+  <% const mainJs = asset('main.js'); if (mainJs) { %>
+  <script type="module" src="<%= mainJs %>" defer></script>
+  <% } %>
+</body>
+</html>

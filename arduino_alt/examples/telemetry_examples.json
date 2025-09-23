@@ -1,0 +1,55 @@
+[
+  {
+    "description": "Environment telemetry",
+    "payload": {
+      "ts": "2025-09-17T12:03:20Z",
+      "site": "KIN-GOLIATH",
+      "device": "relay-s3-01",
+      "asset_id": "A-PP-03",
+      "metrics": {
+        "t_c": 28.6,
+        "rh": 61.8,
+        "mq135_ppm": 146,
+        "lux": 120
+      },
+      "rssi_dbm": -62,
+      "fw": "arduino-1.0.2",
+      "idempotency_key": "uuid-env-001"
+    }
+  },
+  {
+    "description": "Power telemetry",
+    "payload": {
+      "ts": "2025-09-17T12:03:25Z",
+      "site": "KIN-GOLIATH",
+      "device": "pzem-01",
+      "asset_id": "A-PZ-01",
+      "metrics": {
+        "voltage_v": 228.4,
+        "current_a": 3.8,
+        "power_w": 744,
+        "energy_Wh": 19250,
+        "pf": 0.93,
+        "freq_hz": 50.0
+      },
+      "fw": "arduino-1.0.2",
+      "idempotency_key": "uuid-pwr-042"
+    }
+  },
+  {
+    "description": "Water telemetry",
+    "payload": {
+      "ts": "2025-09-17T12:03:30Z",
+      "site": "KIN-GOLIATH",
+      "device": "pzem-01",
+      "asset_id": "A-PZ-01",
+      "metrics": {
+        "level_l": null,
+        "flow_l_min": null,
+        "pump_on": true
+      },
+      "fw": "arduino-1.0.2",
+      "idempotency_key": "uuid-water-077"
+    }
+  }
+]

@@ -1,0 +1,8 @@
+user farm_iot
+pattern write v1/farm/SITE:KIN-GOLIATH/%u/cmd
+pattern read v1/farm/SITE:KIN-GOLIATH/%u/ack
+pattern read v1/farm/SITE:KIN-GOLIATH/%u/telemetry/#
+pattern read v1/farm/SITE:KIN-GOLIATH/%u/status
+
+user streamer
+topic readwrite v1/farm/SITE:KIN-GOLIATH/#

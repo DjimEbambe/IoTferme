@@ -1,0 +1,35 @@
+[
+  {
+    "description": "Relay & setpoints update with sequence",
+    "payload": {
+      "asset_id": "A-PP-03",
+      "relay": {"lamp": "ON", "fan": "OFF", "heater": "ON", "door": "CLOSE"},
+      "setpoints": {"t_c": 32, "rh": 65, "lux": 150},
+      "sequence": [
+        {"act": "fan", "dur_s": 60},
+        {"wait_s": 30},
+        {"act": "heater", "dur_s": 300}
+      ],
+      "correlation_id": "uuid-1234-5678"
+    }
+  },
+  {
+    "description": "Toggle hardware features at runtime",
+    "payload": {
+      "type": "feature",
+      "asset_id": "A-PP-03",
+      "real_sensors": true,
+      "relay_control": true,
+      "correlation_id": "uuid-feature-001"
+    }
+  },
+  {
+    "description": "Pump command + energy reset",
+    "payload": {
+      "asset_id": "A-PZ-01",
+      "relay": {"pump": "ON"},
+      "reset_energy": true,
+      "correlation_id": "uuid-90ab-cdef"
+    }
+  }
+]

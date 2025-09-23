@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% set title = 'Edge Agent · Buffer' %}
+{% set active = 'buffer' %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Queue MQTT locale</span>
+    <div class="btn-group btn-group-sm" role="group">
+      <button class="btn btn-outline-primary" data-action="replay">Rejouer</button>
+      <button class="btn btn-outline-danger" data-action="purge">Purger ACK</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Messages en attente</dt>
+      <dd class="col-sm-9">{{ stats.queued }}</dd>
+      <dt class="col-sm-3">Envolés</dt>
+      <dd class="col-sm-9">{{ stats.inflight }}</dd>
+      <dt class="col-sm-3">Oldest</dt>
+      <dd class="col-sm-9">{{ stats.oldest_ts or 'n/a' }}</dd>
+    </dl>
+    <div class="table-responsive mt-4">
+      <table class="table table-striped table-sm">
+        <thead><tr><th>ID</th><th>Ts</th><th>Topic</th><th>QoS</th><th>Sent</th><th>Payload</th></tr></thead>
+        <tbody>
+          {% for row in entries %}
+          <tr>
+            <td>{{ row.id }}</td>
+            <td>{{ row.ts }}</td>
+            <td><code>{{ row.topic }}</code></td>
+            <td>{{ row.qos }}</td>
+            <td>{{ 'oui' if row.sent else 'non' }}</td>
+            <td><code class="small text-wrap">{{ row.payload_json }}</code></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted">Queue vide</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

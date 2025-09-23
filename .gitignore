@@ -1,0 +1,39 @@
+# Node / frontend assets
+node_modules/
+web-gateway/node_modules/
+iot-streamer/node_modules/
+web-gateway/src/public/dist/
+iot-streamer/dist/
+
+# Python virtual environments & caches
+.venv/
+*/.venv/
+ml-engine/venv/
+.env
+web-gateway/.env
+iot-streamer/.env
+ml-engine/.env
+edge-device-stack/edge-agent/.env
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+.coverage*
+
+# Build artefacts
+iot-streamer/dist/
+edge-device-stack/esp32/**/build/
+*.egg-info/
+*.log
+
+# IDE / tooling
+.idea/
+.vscode/
+.DS_Store
+
+# Misc
+.nyc_output/
+*.swp
+*.swo

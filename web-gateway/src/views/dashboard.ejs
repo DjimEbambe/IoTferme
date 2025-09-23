@@ -1,0 +1,221 @@
+<div class="section-heading">
+  <div>
+    <div class="title text-glow">Command Center</div>
+    <div class="subtitle">Suivi temps réel du site <strong>SITE:KIN-GOLIATH</strong> • Dernière actualisation <span id="lastRefresh"><%= today %></span></div>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <span class="badge-soft success"><i class="bi bi-lightning-charge me-2"></i>SLA p95 télémetrie &lt; 2s</span>
+    <% if (canIssueCmd) { %>
+    <button class="btn-soft" data-bs-toggle="modal" data-bs-target="#quickCommandModal"><i class="bi bi-send-check me-2"></i>Commande rapide</button>
+    <% } %>
+  </div>
+</div>
+
+<section class="dashboard-hero">
+  <div>
+    <div class="glass-panel shadow-soft">
+      <div class="metric-grid">
+        <div class="metric-card" data-metric="lots_active">
+          <h4 class="text-uppercase">Lots actifs</h4>
+          <div class="metric-value"><%= kpi.kpis.lots_active %></div>
+          <span class="metric-trend"><i class="bi bi-people-fill me-1"></i>Production</span>
+        </div>
+        <div class="metric-card" data-metric="birds_current">
+          <h4 class="text-uppercase">Effectif actuel</h4>
+          <div class="metric-value"><%= kpi.kpis.birds_current %></div>
+          <span class="metric-trend"><i class="bi bi-arrow-up-right-circle me-1"></i>Stocks vivants</span>
+        </div>
+        <div class="metric-card" data-metric="gmq">
+          <h4 class="text-uppercase">GMQ</h4>
+          <div class="metric-value"><%= kpi.kpis.gmq %></div>
+          <span class="metric-trend"><i class="bi bi-speedometer2 me-1"></i>g/jour</span>
+        </div>
+        <div class="metric-card" data-metric="fcr">
+          <h4 class="text-uppercase">Indice FCR</h4>
+          <div class="metric-value"><%= Number(kpi.kpis.fcr).toFixed(2) %></div>
+          <span class="metric-trend negative"><i class="bi bi-droplet-half me-1"></i>Ration</span>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-6">
+          <div class="metric-card" data-metric="water">
+            <h4 class="text-uppercase">Eau / kg vif</h4>
+            <div class="metric-value"><%= Number(kpi.kpis.water_per_kg).toFixed(2) %> L</div>
+            <span class="metric-trend"><i class="bi bi-droplet me-1"></i>Optimisation</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="metric-card" data-metric="energy">
+            <h4 class="text-uppercase">Énergie / kg vif</h4>
+            <div class="metric-value"><%= Number(kpi.kpis.kwh_per_kg).toFixed(2) %> kWh</div>
+            <span class="metric-trend"><i class="bi bi-lightbulb me-1"></i>Solaire</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel shadow-soft mt-4">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Chronique opérationnelle 24h</h5>
+          <small class="text-secondary">Rejouez les événements clé (incubation, soins, énergie, incidents)</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge-soft warning"><i class="bi bi-clock-history me-1"></i>UTC</span>
+          <button class="btn btn-outline-light btn-sm" id="btnReplay"><i class="bi bi-play-fill me-1"></i>Rejouer</button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="timelineChart" height="110"></canvas>
+      </div>
+    </div>
+
+    <div class="panel shadow-soft mt-4">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Lots en suivi</h5>
+          <small class="text-secondary">Statut sanitaire et performances par lot</small>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-light active" data-filter="all">Tous</button>
+          <button class="btn btn-outline-light" data-filter="EN_COURS">Actifs</button>
+          <button class="btn btn-outline-light" data-filter="TERMINE">Terminés</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0 card-table" id="lotsTable">
+          <thead>
+            <tr>
+              <th>Lot</th>
+              <th>Statut</th>
+              <th>Effectif</th>
+              <th>GMQ</th>
+              <th>FCR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% kpi.lots.forEach((lot) => { %>
+            <tr data-status="<%= lot.status %>" data-lot='<%- JSON.stringify(lot) %>'>
+              <td class="fw-semibold"><%= lot.lot_id %></td>
+              <td>
+                <% const statusClass = lot.status === 'EN_COURS' ? 'erp-badge-active' : lot.status === 'TERMINE' ? 'erp-badge-closed' : 'erp-badge-pending'; %>
+                <span class="badge-soft <%= statusClass %>"><%= lot.status %></span>
+              </td>
+              <td><%= lot.nb_current %> <small class="text-secondary">volailles</small></td>
+              <td><%= lot.kpis?.gmq ?? '-' %></td>
+              <td><%= lot.kpis?.fcr ?? '-' %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <aside class="d-flex flex-column gap-4">
+    <div class="panel shadow-soft">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Stocks & ressources</h5>
+          <small class="text-secondary">Approvisionnement provenderie, vaccins, énergie</small>
+        </div>
+      </div>
+      <div class="realtime-feed" id="resourceList">
+        <% kpi.resources.forEach((resource) => { %>
+          <% const reorder = resource.reorder_point || 1; const ratio = Math.min(100, Math.round((resource.stock_level / reorder) * 100)); %>
+          <div class="mb-3 p-2 rounded-3" style="background: rgba(255,255,255,0.03);">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong><%= resource.name %></strong>
+                <div class="small text-secondary text-uppercase"><%= resource.category %></div>
+              </div>
+              <span class="badge-soft <%= resource.below_reorder ? 'danger' : 'success' %>"><%= resource.stock_level %> <%= resource.unit %></span>
+            </div>
+            <div class="progress mt-2" style="height: 6px;">
+              <div class="progress-bar <%= resource.below_reorder ? 'bg-danger' : 'bg-success' %>" role="progressbar" style="width: <%= resource.below_reorder ? Math.min(100, ratio) : Math.min(100, ratio) %>%"></div>
+            </div>
+            <% if (resource.below_reorder) { %>
+            <small class="text-danger d-block mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Recompléter sous 24h</small>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="panel shadow-soft">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Flux temps réel</h5>
+          <small class="text-secondary">Télémétries, commandes, incidents corrélés</small>
+        </div>
+        <button class="btn btn-outline-light btn-sm" id="btnClearFeed"><i class="bi bi-trash me-1"></i>Vider</button>
+      </div>
+      <ul class="timeline-list" id="telemetryFeed">
+        <li class="text-secondary">En attente de messages MQTT...</li>
+      </ul>
+    </div>
+
+    <div class="panel shadow-soft">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Incidents & alertes</h5>
+          <small class="text-secondary">Historique rolling 24h</small>
+        </div>
+      </div>
+      <ul class="timeline-list" id="incidentList">
+        <li class="text-secondary">Aucun incident critique</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<!-- Quick Command Modal -->
+<div class="modal fade" id="quickCommandModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-0">
+        <h5 class="modal-title"><i class="bi bi-send-check me-2"></i>Envoyer une commande</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="quickCmdForm" class="row g-3">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="col-md-6">
+            <label class="form-label">Asset ciblé</label>
+            <input type="text" class="form-control" name="asset_id" placeholder="BLDG:A-PP-01" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Périphérique</label>
+            <select name="action" class="form-select">
+              <option value="lamp_on">Lampes ON</option>
+              <option value="lamp_off">Lampes OFF</option>
+              <option value="fan_on">Ventilation AUTO</option>
+              <option value="door_open">Accès poussinière</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Commentaire opérateur</label>
+            <textarea name="comment" class="form-control" rows="2" placeholder="Motif, timing, consignes..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-success" id="btnSendQuickCmd"><i class="bi bi-send-fill me-1"></i>Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script nonce="<%= nonce %>">
+window.__DASHBOARD__ = {
+  timeline: <%- JSON.stringify(lotTimeline || []) %>,
+  csrfToken: '<%= csrfToken %>',
+  canIssueCmd: <%= canIssueCmd ? 'true' : 'false' %>,
+  kpis: <%- JSON.stringify(kpi.kpis) %>,
+  resources: <%- JSON.stringify(kpi.resources) %>,
+  lots: <%- JSON.stringify(kpi.lots) %>
+};
+</script>
+<script src="/js/charts.js" nonce="<%= nonce %>"></script>
+<script src="/js/ws.js" nonce="<%= nonce %>"></script>

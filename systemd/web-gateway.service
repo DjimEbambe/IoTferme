@@ -1,0 +1,18 @@
+[Unit]
+Description=FarmStack Web Gateway
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+User=farmapp
+Group=farmapp
+WorkingDirectory=/opt/farmstack/web-gateway
+EnvironmentFile=/opt/farmstack/web-gateway/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/farmstack/web-gateway.log
+StandardError=append:/var/log/farmstack/web-gateway.err.log
+
+[Install]
+WantedBy=multi-user.target

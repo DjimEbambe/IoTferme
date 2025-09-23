@@ -1,0 +1,23 @@
+body {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+code {
+  font-size: 0.85rem;
+}
+
+textarea.font-monospace {
+  font-family: "Fira Code", "Courier New", monospace;
+}
+
+.table td, .table th {
+  vertical-align: middle;
+}
+
+.badge {
+  font-weight: 500;
+}
+
+.alert {
+  transition: opacity 0.3s ease;
+}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% set title = 'Edge Agent · Commandes' %}
+{% set active = 'commands' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">Commande JSON</div>
+      <div class="card-body">
+        <form id="cmd-form" class="vstack gap-2">
+          <div>
+            <label class="form-label" for="cmd-payload">Payload</label>
+            <textarea class="form-control font-monospace" id="cmd-payload" rows="8">{
+  "asset_id": "A-PP-01",
+  "relay": {"lamp": "ON"},
+  "setpoints": {"t_c": 28},
+  "sequence": []
+}</textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">Envoyer</button>
+          <div class="alert mt-2 d-none" role="alert" id="cmd-result"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Test relais rapide</div>
+      <div class="card-body">
+        <form id="relay-form" class="row g-2 align-items-end">
+          <div class="col-12">
+            <label class="form-label" for="relay-asset">Asset</label>
+            <select class="form-select" id="relay-asset">
+              {% for device in devices %}
+              <option value="{{ device.asset_id }}">{{ device.asset_id }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="relay-channel">Canal</label>
+            <input class="form-control" id="relay-channel" placeholder="lamp" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="relay-state">État</label>
+            <select class="form-select" id="relay-state">
+              <option>ON</option>
+              <option>OFF</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="relay-duration">Durée (s)</label>
+            <input class="form-control" id="relay-duration" type="number" min="1" max="3600" />
+          </div>
+          <div class="col-12 text-end">
+            <button class="btn btn-outline-primary" type="submit">Tester</button>
+          </div>
+          <div class="col-12">
+            <div class="alert mt-2 d-none" role="alert" id="relay-result"></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

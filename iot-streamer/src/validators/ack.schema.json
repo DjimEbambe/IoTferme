@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["asset_id", "correlation_id", "ok"],
+  "properties": {
+    "asset_id": { "type": "string" },
+    "correlation_id": { "type": "string" },
+    "ok": { "type": "boolean" },
+    "message": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

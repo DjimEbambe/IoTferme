@@ -1,0 +1,67 @@
+@startuml
+skinparam backgroundColor #0d1117
+skinparam ArrowColor #58a6ff
+skinparam rectangle {
+  BackgroundColor #161b22
+  BorderColor #58a6ff
+  FontColor #f0f6fc
+}
+
+entity "Site" as Site {
+  *site_id : string
+  name : string
+  timezone : string
+}
+
+entity "Building" as Building {
+  *building_id : string
+  site_id : string
+  surface_m2 : number
+}
+
+entity "Zone" as Zone {
+  *zone_id : string
+  building_id : string
+  capacity : number
+}
+
+entity "PP" as PP {
+  *pp_id : string
+  zone_id : string
+  mode : enum
+  state : enum
+}
+
+entity "Lot" as Lot {
+  *lot_id : string
+  zone_id : string
+  nb_current : number
+}
+
+entity "Incubation" as Incubation {
+  *incubation_id : string
+  lot_id : string
+  hatch_rate : number
+}
+
+entity "Asset" as Asset {
+  *asset_id : string
+  site_id : string
+  type : enum
+}
+
+entity "Resource" as Resource {
+  *resource_id : string
+  site_id : string
+  category : enum
+}
+
+Site ||--o{ Building
+Building ||--o{ Zone
+Zone ||--o{ PP
+Zone ||--o{ Lot
+Lot ||--o{ PP
+Lot ||--o{ Incubation
+Site ||--o{ Asset
+Site ||--o{ Resource
+@enduml

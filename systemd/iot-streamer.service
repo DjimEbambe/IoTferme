@@ -1,0 +1,18 @@
+[Unit]
+Description=FarmStack IoT Streamer
+After=network-online.target mosquitto.service influxdb.service redis-server.service
+Wants=network-online.target
+
+[Service]
+User=farmapp
+Group=farmapp
+WorkingDirectory=/opt/farmstack/iot-streamer
+EnvironmentFile=/opt/farmstack/iot-streamer/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/farmstack/iot-streamer.log
+StandardError=append:/var/log/farmstack/iot-streamer.err.log
+
+[Install]
+WantedBy=multi-user.target

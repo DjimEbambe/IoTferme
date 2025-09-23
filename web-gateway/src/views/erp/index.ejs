@@ -1,0 +1,229 @@
+<div class="section-heading">
+  <div>
+    <div class="title">Gestion des lots & opérations</div>
+    <div class="subtitle">Pilotez l'ensemble du cycle œuf → poussins → vente en temps réel</div>
+  </div>
+  <div class="erp-toolbar">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-transparent text-secondary"><i class="bi bi-search"></i></span>
+      <input type="search" class="form-control" id="lotSearch" placeholder="Rechercher un lot, une zone, un actif...">
+    </div>
+    <select class="form-select form-select-sm w-auto" id="lotStatusFilter">
+      <option value="all">Tous statuts</option>
+      <option value="EN_COURS">En cours</option>
+      <option value="TERMINE">Terminé</option>
+      <option value="ARCHIVE">Archivé</option>
+    </select>
+    <button class="btn-soft" data-bs-toggle="modal" data-bs-target="#modalLot"><i class="bi bi-plus-circle me-1"></i>Nouveau lot</button>
+  </div>
+</div>
+
+<section class="metric-grid mb-4">
+  <div class="metric-card">
+    <h4>Lots suivis</h4>
+    <div class="metric-value"><%= lots.length %></div>
+    <span class="metric-trend"><i class="bi bi-clipboard2-data me-1"></i>ERP</span>
+  </div>
+  <div class="metric-card">
+    <h4>Incubations actives</h4>
+    <div class="metric-value"><%= incubations.filter((i) => i.status !== 'ARCHIVE').length %></div>
+    <span class="metric-trend"><i class="bi bi-egg-fried me-1"></i>Éclosion</span>
+  </div>
+  <div class="metric-card">
+    <h4>Capacité totale</h4>
+    <div class="metric-value"><%= lots.reduce((acc, lot) => acc + (lot.nb_initial || 0), 0) %></div>
+    <span class="metric-trend"><i class="bi bi-building me-1"></i>Volaille</span>
+  </div>
+  <div class="metric-card">
+    <h4>Lot le plus âgé</h4>
+    <% const oldest = lots.sort((a, b) => (b.age_days || 0) - (a.age_days || 0))[0]; %>
+    <div class="metric-value"><%= oldest?.age_days ?? 0 %> j</div>
+    <span class="metric-trend"><i class="bi bi-hourglass-split me-1"></i>Rotation</span>
+  </div>
+</section>
+
+<div class="row g-4">
+  <div class="col-12 col-xl-8">
+    <div class="panel shadow-soft">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Lots</h5>
+          <small class="text-secondary">Tri dynamique par statut, bâtiment, densité</small>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-light active" data-sort="lot_id">Lot</button>
+          <button class="btn btn-outline-light" data-sort="age">Âge</button>
+          <button class="btn btn-outline-light" data-sort="fcr">FCR</button>
+        </div>
+      </div>
+      <div class="table-responsive erp-table">
+        <table class="table table-dark table-hover align-middle mb-0" id="erpLotsTable">
+          <thead>
+            <tr>
+              <th>Lot</th>
+              <th>Bâtiment / Zone</th>
+              <th>Effectif</th>
+              <th>GMQ</th>
+              <th>FCR</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lots.forEach((lot) => { %>
+            <tr data-lot='<%- JSON.stringify(lot) %>' class="erp-lot-row">
+              <td class="fw-semibold"><i class="bi bi-hexagon-fill text-secondary me-2"></i><%= lot.lot_id %></td>
+              <td>
+                <div><strong><%= lot.building_id || '-' %></strong></div>
+                <small class="text-secondary"><%= lot.zone_id || 'Non affecté' %></small>
+              </td>
+              <td><%= lot.nb_current %> <small class="text-secondary">/ <%= lot.nb_initial %></small></td>
+              <td><%= lot.kpis?.gmq ?? '-' %></td>
+              <td><%= lot.kpis?.fcr ?? '-' %></td>
+              <td>
+                <% const statusClass = lot.status === 'EN_COURS' ? 'erp-badge-active' : lot.status === 'TERMINE' ? 'erp-badge-closed' : 'erp-badge-pending'; %>
+                <span class="badge-soft <%= statusClass %>"><%= lot.status %></span>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="text-end mt-3">
+        <button class="btn btn-outline-light btn-sm" id="btnExportLots"><i class="bi bi-download me-1"></i>Exporter CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="panel shadow-soft mb-4">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Incubations</h5>
+          <small class="text-secondary">Suivi couveuse, DTE, taux d'éclosion</small>
+        </div>
+      </div>
+      <ul class="timeline-list" id="incubationList">
+        <% incubations.forEach((inc) => { %>
+        <li class="flex-column">
+          <div class="d-flex justify-content-between w-100">
+            <div>
+              <strong><%= inc.incubation_id %></strong>
+              <div class="small text-secondary">Couveuse: <%= inc.incubator_id %></div>
+            </div>
+            <% const badgeClass = inc.status === 'EN_COURS' ? 'erp-badge-active' : inc.status === 'TERMINE' ? 'erp-badge-closed' : 'erp-badge-pending'; %>
+            <span class="badge-soft <%= badgeClass %>"><%= inc.status %></span>
+          </div>
+          <div class="small text-secondary">
+            Démarré: <%= inc.start_date ? new Date(inc.start_date).toISOString().slice(0,10) : '-' %>
+            <% if (inc.expected_hatch_date) { %>
+            • Éclosion prévue: <%= new Date(inc.expected_hatch_date).toISOString().slice(0,10) %>
+            <% } %>
+          </div>
+          <% if (inc.hatch_rate) { %>
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: <%= inc.hatch_rate %>%"></div>
+          </div>
+          <% } %>
+        </li>
+        <% }) %>
+        <% if (!incubations.length) { %>
+        <li class="text-secondary">Aucune incubation enregistrée.</li>
+        <% } %>
+      </ul>
+    </div>
+
+    <div class="panel shadow-soft">
+      <div class="panel-header">
+        <div>
+          <h5 class="fw-semibold mb-0">Actions rapides</h5>
+          <small class="text-secondary">Maintenance, soins, réconciliations</small>
+        </div>
+      </div>
+      <div class="d-grid gap-2">
+        <button class="btn-soft" id="btnScheduleHealth"><i class="bi bi-heart-pulse me-2"></i>Planifier une visite sanitaire</button>
+        <button class="btn-soft" id="btnScheduleFeed"><i class="bi bi-truck me-2"></i>Programmer approvisionnement</button>
+        <button class="btn-soft" id="btnOpenLotOffcanvas"><i class="bi bi-journal-text me-2"></i>Consulter fiche lot</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lot creation modal -->
+<div class="modal fade" id="modalLot" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-light offcanvas-dark">
+      <form id="formLot" class="needs-validation" novalidate>
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nouveau lot</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="col-md-4">
+            <label class="form-label">Identifiant</label>
+            <input class="form-control" name="lot_id" placeholder="LOT-YYYYMM" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Effectif initial</label>
+            <input type="number" class="form-control" name="nb_initial" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Effectif actuel</label>
+            <input type="number" class="form-control" name="nb_current" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Bâtiment</label>
+            <input class="form-control" name="building_id" value="BLDG:A">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Zone</label>
+            <input class="form-control" name="zone_id" value="A-Z1">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PP assignées</label>
+            <input class="form-control" name="pp_ids" placeholder="BLDG:A-PP-01,BLDG:A-PP-02">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Poids cible (kg)</label>
+            <input type="number" step="0.1" class="form-control" name="target_weight_kg" placeholder="2.5">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Statut</label>
+            <select class="form-select" name="status">
+              <option value="EN_COURS" selected>En cours</option>
+              <option value="TERMINE">Terminé</option>
+              <option value="ARCHIVE">Archivé</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="2" placeholder="Consignes, biosécurité, alimentation spécifique..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>
+          <button class="btn btn-success" type="submit"><i class="bi bi-check2-circle me-1"></i>Créer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Lot detail offcanvas -->
+<div class="offcanvas offcanvas-end offcanvas-dark" tabindex="-1" id="lotDetailPane">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Fiche lot</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body" id="lotDetailContent">
+    <p class="text-secondary">Sélectionnez un lot pour afficher sa fiche détaillée.</p>
+  </div>
+</div>
+
+<script nonce="<%= nonce %>">
+window.__ERP__ = {
+  csrfToken: '<%= csrfToken %>',
+  lots: <%- JSON.stringify(lots) %>,
+  incubations: <%- JSON.stringify(incubations) %>
+};
+</script>

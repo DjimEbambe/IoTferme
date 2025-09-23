@@ -1,0 +1,32 @@
+@startuml
+package "Raspberry Pi 5" {
+  [Edge Agent (FastAPI)] as Edge
+  [SQLite DB]
+  [MQTT Client]
+  [USB Serial Bridge]
+}
+
+package "ESP32 Gateway" {
+  [ESP-NOW Router]
+  [USB CDC]
+}
+
+package "ESP32 Devices" {
+  [Env Sensor]
+  [PZEM Monitor]
+}
+
+package "Cloud" {
+  [MQTT Broker]
+  [InfluxDB]
+}
+
+Edge --> "MQTT Broker" : QoS1
+Edge --> "SQLite DB" : Buffer 28j
+Edge --> "USB Serial Bridge" : COBS/CBOR
+"USB Serial Bridge" --> "ESP-NOW Router" : Commands / Telemetry
+"ESP-NOW Router" --> "Env Sensor"
+"ESP-NOW Router" --> "PZEM Monitor"
+"Env Sensor" --> "ESP-NOW Router" : Telemetry env
+"PZEM Monitor" --> "ESP-NOW Router" : Telemetry power
+@enduml

@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: FarmStack ML Engine
+  version: 0.1.0
+  description: API ML pour anomalies, prévision de métriques et optimisation de ration.
+servers:
+  - url: https://farmstack.local
+paths:
+  /ml/anomaly:
+    post:
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalyRequest'
+      responses:
+        '200':
+          description: Anomalies détectées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyResponse'
+  /ml/predict:
+    post:
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictRequest'
+      responses:
+        '200':
+          description: Prévision horizon demandé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictResponse'
+  /ml/optimize_ration:
+    post:
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimizeRationRequest'
+      responses:
+        '200':
+          description: Répartition optimale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeRationResponse'
+  /ml/schedule:
+    post:
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+      responses:
+        '200':
+          description: Planning opérationnel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleResponse'
+  /ml/health:
+    get:
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Statut du moteur ML
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  env:
+                    type: string
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    SeriesPoint:
+      type: object
+      properties:
+        ts:
+          type: string
+          format: date-time
+        value:
+          type: number
+    AnomalyRequest:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesPoint'
+        method:
+          type: string
+          enum: [zscore, iqr, changepoint]
+        sensitivity:
+          type: number
+      required: [series]
+    AnomalyResponse:
+      type: object
+      properties:
+        anomalies:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              point:
+                $ref: '#/components/schemas/SeriesPoint'
+              score:
+                type: number
+    PredictRequest:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesPoint'
+        horizon:
+          type: integer
+          maximum: 168
+        interval_hours:
+          type: integer
+      required: [series]
+    PredictResponse:
+      type: object
+      properties:
+        forecast:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesPoint'
+    OptimizeRationRequest:
+      type: object
+      properties:
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              cost_per_kg: { type: number }
+              protein: { type: number }
+              energy: { type: number }
+              fiber: { type: number }
+              max_ratio: { type: number }
+        constraints:
+          type: object
+          properties:
+            total_mass: { type: number }
+            min_protein: { type: number }
+            min_energy: { type: number }
+            max_fiber: { type: number }
+      required: [ingredients, constraints]
+    OptimizeRationResponse:
+      type: object
+      properties:
+        allocations:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              kg: { type: number }
+              ratio: { type: number }
+        cost_total:
+          type: number
+    ScheduleRequest:
+      type: object
+      properties:
+        lot_id: { type: string }
+        current_age_days: { type: integer }
+        horizon_hours: { type: integer }
+        avg_weight_kg: { type: number }
+      required: [lot_id, current_age_days]
+    ScheduleResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              ts: { type: string }
+              action: { type: string }
+              target: { type: string }
+              notes: { type: string }

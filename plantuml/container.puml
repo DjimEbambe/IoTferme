@@ -1,0 +1,38 @@
+@startuml
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/LATEST/AWSCommon.puml
+skinparam backgroundColor #0d1117
+skinparam defaultTextAlignment center
+skinparam ArrowColor #2ecc71
+skinparam node {
+  BackgroundColor #161b22
+  BorderColor #58a6ff
+  FontColor #f0f6fc
+}
+
+rectangle "Nginx Reverse Proxy" as nginx {
+  node "web-gateway\nExpress/EJS" as web
+  node "Socket.IO" as ws
+}
+
+node "iot-streamer\nNode Worker" as streamer
+node "ml-engine\nFastAPI" as ml
+
+rectangle "Data" {
+  database "MongoDB" as mongo
+  database "InfluxDB 2" as influx
+  database "Redis" as redis
+  node "Mosquitto" as mqtt
+}
+
+web --> streamer : Redis Pub/Sub
+web --> ml : HTTPS /ml/
+web --> mongo
+web --> influx
+streamer --> influx : Telemetry writes
+streamer --> redis : Streams + Pub/Sub
+streamer --> mqtt : MQTT QoS1
+ml --> influx : Feature reads
+ml --> mongo : ERP context
+nginx --> web : HTTP/S
+ws --> web
+@enduml

@@ -1,0 +1,18 @@
+[Unit]
+Description=FarmStack ML Engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=farmapp
+Group=farmapp
+WorkingDirectory=/opt/farmstack/ml-engine
+EnvironmentFile=/opt/farmstack/ml-engine/.env
+ExecStart=/opt/farmstack/ml-engine/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/farmstack/ml-engine.log
+StandardError=append:/var/log/farmstack/ml-engine.err.log
+
+[Install]
+WantedBy=multi-user.target

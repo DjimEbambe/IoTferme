@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% set title = 'Edge Agent · Diagnostic' %}
+{% set active = 'diag' %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Jobs planifiés</div>
+      <div class="card-body">
+        <ul class="list-group">
+          {% for job in jobs %}
+          <li class="list-group-item">
+            <strong>{{ job.id }}</strong>
+            <div class="small text-muted">{{ job.trigger }}</div>
+            <div class="small">Prochaine: {{ job.next_run_time or 'n/a' }}</div>
+          </li>
+          {% else %}
+          <li class="list-group-item text-muted">Aucun job</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Actions</div>
+      <div class="card-body vstack gap-2">
+        <button class="btn btn-outline-secondary" data-action="time-sync">Forcer time sync</button>
+        <button class="btn btn-outline-primary" data-action="pair-begin">Ouvrir pairing (120s)</button>
+        <button class="btn btn-outline-warning" data-action="pair-end">Fermer pairing</button>
+        <button class="btn btn-outline-danger" data-action="reset-backlog">Reset backlog</button>
+        <form class="row g-2 align-items-end" id="set-mac-form">
+          <div class="col-md-6">
+            <label for="set-mac-value" class="form-label">MAC passerelle (format 02:11:22:33:44:55)</label>
+            <input type="text" class="form-control" id="set-mac-value" placeholder="02:11:22:33:44:55" required>
+          </div>
+          <div class="col-md-3 form-check ms-2">
+            <input class="form-check-input" type="checkbox" value="1" id="set-mac-persist">
+            <label class="form-check-label" for="set-mac-persist">Persister (NVS)</label>
+          </div>
+          <div class="col-md-3 text-end">
+            <button type="submit" class="btn btn-outline-success">Enregistrer MAC</button>
+          </div>
+        </form>
+        <div class="alert d-none mt-2" role="alert" id="diag-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+  <div class="card-header">Devices</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Asset</th><th>MAC</th><th>RSSI</th><th>FW</th><th>Vu</th><th>Ping</th></tr></thead>
+        <tbody>
+          {% for device in devices %}
+          <tr>
+            <td>{{ device.asset_id }}</td>
+            <td><code>{{ device.mac }}</code></td>
+            <td>{{ device.rssi_dbm if device.rssi_dbm is not none else 'n/a' }}</td>
+            <td>{{ device.fw or 'n/a' }}</td>
+            <td class="text-muted small">{{ device.last_seen }}</td>
+            <td><button class="btn btn-sm btn-outline-success" data-action="ping" data-asset="{{ device.asset_id }}" data-mac="{{ device.mac }}">Ping</button></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted">Aucun device</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

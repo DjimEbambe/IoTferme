@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% set title = 'Edge Agent · Status' %}
+{% set active = 'status' %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Backlog</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-6">Queued</dt>
+          <dd class="col-6">{{ backlog.queued or backlog.get('queued', 0) }}</dd>
+          <dt class="col-6">Inflight</dt>
+          <dd class="col-6">{{ backlog.inflight or backlog.get('inflight', 0) }}</dd>
+          <dt class="col-6">Oldest</dt>
+          <dd class="col-6">{{ backlog.oldest_ts or 'n/a' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header">Santé</div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Composant</th><th>Statut</th><th>Détails</th><th>MAJ</th></tr></thead>
+            <tbody>
+              {% for name, info in health.items() %}
+              <tr>
+                <td>{{ name }}</td>
+                <td><span class="badge text-bg-{{ 'success' if info.status in ['ok','up','running'] else 'danger' }}">{{ info.status }}</span></td>
+                <td><code class="small">{{ info.detail }}</code></td>
+                <td class="text-muted small">{{ info.updated_at }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+  <div class="card-header">Dernières télémétries</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Asset</th><th>Ts</th><th>RSSI (dBm)</th><th>Metrics</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in telemetry %}
+          <tr>
+            <td>{{ entry.asset_id }}</td>
+            <td>{{ entry.ts }}</td>
+            <td>{{ entry.rssi_dbm if entry.rssi_dbm is not none else 'n/a' }}</td>
+            <td>
+              {% for key, value in entry.metrics.items() %}
+              <span class="badge text-bg-secondary me-1">{{ key }}: {{ value }}</span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted">Aucune donnée récente</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+  <div class="card-header">Devices</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Asset</th><th>MAC</th><th>RSSI</th><th>FW</th><th>Vu</th></tr></thead>
+        <tbody>
+          {% for device in devices %}
+          <tr>
+            <td>{{ device.asset_id }}</td>
+            <td><code>{{ device.mac }}</code></td>
+            <td>{{ device.rssi_dbm if device.rssi_dbm is not none else 'n/a' }}</td>
+            <td>{{ device.fw or 'n/a' }}</td>
+            <td class="text-muted small">{{ device.last_seen }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted">Aucun device enrôlé</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
