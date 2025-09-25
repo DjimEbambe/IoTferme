@@ -27,7 +27,7 @@ Accès par défaut : `http://localhost:8000/` (mot de passe à configurer via `w
 - `src/frontend/` : code front (modules JS + SCSS) – jumeau numérique Three.js (`modules/twinScene.js`, `modules/twin.js`).
 - `src/dao/` : modèles Mongoose, services MongoDB (`docs/mongodb_plan.md` résume le schéma complet).
 - `src/routes/` : API/rest pour KPI, séries, commandes, ERP.
-- `src/public/` : assets statiques (dist Webpack, modèles GLB).
+- `src/public/` : assets statiques (dist Webpack, modèles GLB).    k
 
 ## Configuration
 
