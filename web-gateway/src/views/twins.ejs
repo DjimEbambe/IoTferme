@@ -1,113 +1,116 @@
+<%
+  const normalizeKey = (value) => {
+    if (value === undefined || value === null) return '';
+    return value
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+  };
+  const canonicalLookup = {
+    BLDGA: 'BLDG:A',
+    BATIMENT1: 'BLDG:A',
+    BAT1: 'BLDG:A',
+    BATIMENTA: 'BLDG:A',
+    BLDGB: 'BLDG:B',
+    BATIMENT2: 'BLDG:B',
+    BAT2: 'BLDG:B',
+    BATIMENTB: 'BLDG:B',
+    SUPPROV: 'SUP:PROV',
+    COUVEUSE: 'SUP:PROV',
+  };
+  const friendlyLabels = {
+    'BLDG:A': 'Bâtiment 1',
+    'BLDG:B': 'Bâtiment 2',
+    'SUP:PROV': 'Couveuse',
+  };
+  const canonicalId = (value) => canonicalLookup[normalizeKey(value)] || null;
+  const relevantAssets = (twin.assets || []).reduce((list, asset) => {
+    const canonical = canonicalId(asset.asset_id) || canonicalId(asset?.metadata?.display_name) || canonicalId(asset?.label);
+    if (!canonical || !friendlyLabels[canonical] || list.find((item) => item.canonical === canonical)) return list;
+    list.push({ canonical, friendly: friendlyLabels[canonical] });
+    return list;
+  }, []);
+%>
+
 <div class="section-heading">
   <div>
-    <div class="title">Jumeau numérique</div>
-    <div class="subtitle">Visualisation immersive du site, commandes et calibration en direct</div>
+    <div class="title">IotFarm — Jumeau numérique</div>
+    <div class="subtitle">Suivi en direct de Bâtiment 1, Bâtiment 2 et Couveuse</div>
   </div>
-  <div class="scene-toolbar">
-    <button class="btn-soft" id="btnToggleHeatmap" data-mode="temperature"><i class="bi bi-thermometer-half me-2"></i>Heatmap Température</button>
-    <button class="btn-soft" id="btnToggleLayout"><i class="bi bi-palette me-2"></i>Mode layout</button>
-    <button class="btn-soft" id="btnLayoutSave"><i class="bi bi-save me-2"></i>Sauvegarder</button>
-  </div>
+  <button class="btn-soft" id="btnToggleHeatmap" data-mode="temperature">
+    <i class="bi bi-thermometer-half me-2"></i>Température
+  </button>
 </div>
 
 <section class="twin-layout">
   <div>
     <div class="scene-container shadow-soft">
-      <canvas id="twinCanvas"></canvas>
-      <div class="position-absolute top-0 end-0 m-3 p-3 rounded-4" style="background: rgba(0,0,0,0.45);">
-        <div class="d-flex align-items-center gap-2 text-secondary">
-          <i class="bi bi-geo-alt"></i>
-          <span>Site: <strong>SITE:KIN-GOLIATH</strong></span>
+      <canvas id="twinCanvas" aria-label="Vue 3D du site de production"></canvas>
+      <div class="scene-overlay">
+        <p class="mb-1 fw-semibold">Navigation rapide</p>
+        <ul class="overlay-list mb-0">
+          <li><strong>Souris</strong> : pivoter autour des bâtiments</li>
+          <li><strong>Molette</strong> : zoom avant / arrière</li>
+          <li><strong>Maj + Souris</strong> : glisser latéralement</li>
+          <li>
+            <button class="btn btn-sm btn-outline-light" data-focus-asset="BLDG:A">Bâtiment 1</button>
+            <button class="btn btn-sm btn-outline-light" data-focus-asset="BLDG:B">Bâtiment 2</button>
+            <button class="btn btn-sm btn-outline-light" data-focus-asset="SUP:PROV">Couveuse</button>
+          </li>
+        </ul>
+        <div class="live-summary" id="liveSummary">
+          <p class="text-secondary mb-0">Données en cours de synchronisation...</p>
         </div>
-        <div class="d-flex align-items-center gap-2 text-secondary mt-1">
-          <i class="bi bi-buildings"></i>
-          <span>Bâtiments: 2 • PP: 16 • Zones: 5</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel shadow-soft mt-4">
-      <div class="panel-header">
-        <div>
-          <h5 class="fw-semibold mb-0">Anomalies capteurs</h5>
-          <small class="text-secondary">Offsets dynamiques, calibrations, validation terrain</small>
-        </div>
-      </div>
-      <div class="control-card">
-        <form id="calibrationForm" class="row g-3">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="col-md-4">
-            <label class="form-label">PP</label>
-            <select class="form-select" name="pp_id" id="calibrationPPSelect">
-              <% (twin.assets || []).filter(a => a.type === 'pp').forEach((asset) => { %>
-              <option value="<%= asset.asset_id %>"><%= asset.asset_id %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Offset température (°C)</label>
-            <input type="number" step="0.1" name="offset_temp" class="form-control" placeholder="0.2">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Offset hygrométrie (%)</label>
-            <input type="number" step="0.1" name="offset_hygro" class="form-control" placeholder="-1.5">
-          </div>
-          <div class="col-12 text-end">
-            <button type="button" class="btn btn-outline-light btn-sm" id="btnCalibrate"><i class="bi bi-tools me-1"></i>Appliquer</button>
-          </div>
-        </form>
       </div>
     </div>
   </div>
 
-  <aside class="d-flex flex-column gap-3">
-    <div class="control-card shadow-soft">
-      <h6>Chaleur & hygrométrie</h6>
-      <div id="heatmapPanel" class="scrollable-y">
-        <p class="text-secondary">En attente de données...</p>
-      </div>
+  <aside class="twin-sidebar">
+    <div class="panel shadow-soft">
+      <h5 class="panel-title">Valeurs en temps réel</h5>
+      <p class="panel-subtitle">Les mesures sont actualisées automatiquement à chaque cycle de ventilation.</p>
+      <div id="liveMetrics" class="metric-grid"></div>
     </div>
 
-    <div class="control-card shadow-soft">
-      <h6>Commandes équipements</h6>
-      <form id="formCmd" class="d-grid gap-3">
+    <div class="panel shadow-soft">
+      <h5 class="panel-title">Commandes rapides</h5>
+      <form id="comfortControls" class="form-grid">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <div>
-          <label class="form-label">Asset</label>
-          <input class="form-control" name="asset_id" placeholder="BLDG:A-PP-01" required>
+        <div class="mb-3">
+          <label class="form-label" for="controlAsset">Zone à commander</label>
+          <select class="form-select" id="controlAsset" name="asset_id" required>
+            <% relevantAssets.forEach((asset) => { %>
+              <option value="<%= asset.canonical %>"><%= asset.friendly %></option>
+            <% }) %>
+          </select>
         </div>
-        <div>
-          <label class="form-label">Action</label>
+
+        <fieldset class="mb-3">
+          <legend class="form-label">Action</legend>
           <div class="btn-group w-100" role="group">
-            <input type="radio" class="btn-check" name="action" id="cmdLampOn" value="lamp_on" checked>
-            <label class="btn btn-outline-light" for="cmdLampOn"><i class="bi bi-brightness-high me-1"></i>Lampes ON</label>
-            <input type="radio" class="btn-check" name="action" id="cmdLampOff" value="lamp_off">
-            <label class="btn btn-outline-light" for="cmdLampOff">Lampes OFF</label>
+            <input type="radio" class="btn-check" name="action" id="actLightsOn" value="lights_on" checked>
+            <label class="btn btn-outline-light" for="actLightsOn">Éclairage ON</label>
+            <input type="radio" class="btn-check" name="action" id="actLightsOff" value="lights_off">
+            <label class="btn btn-outline-light" for="actLightsOff">Éclairage OFF</label>
           </div>
           <div class="btn-group w-100 mt-2" role="group">
-            <input type="radio" class="btn-check" name="action" id="cmdFan" value="fan_on">
-            <label class="btn btn-outline-light" for="cmdFan"><i class="bi bi-fan me-1"></i>Ventilation</label>
-            <input type="radio" class="btn-check" name="action" id="cmdDoor" value="door_open">
-            <label class="btn btn-outline-light" for="cmdDoor"><i class="bi bi-door-open me-1"></i>Porte</label>
+            <input type="radio" class="btn-check" name="action" id="actVentOn" value="ventilation_on">
+            <label class="btn btn-outline-light" for="actVentOn">Ventilation ON</label>
+            <input type="radio" class="btn-check" name="action" id="actVentOff" value="ventilation_off">
+            <label class="btn btn-outline-light" for="actVentOff">Ventilation OFF</label>
           </div>
-        </div>
-        <button class="btn btn-success" type="submit"><i class="bi bi-send-fill me-1"></i>Exécuter</button>
-      </form>
-    </div>
+          <div class="btn-group w-100 mt-2" role="group">
+            <input type="radio" class="btn-check" name="action" id="actDoorsOpen" value="doors_open">
+            <label class="btn btn-outline-light" for="actDoorsOpen">Ouvrir les portes</label>
+            <input type="radio" class="btn-check" name="action" id="actDoorsClose" value="doors_close">
+            <label class="btn btn-outline-light" for="actDoorsClose">Fermer les portes</label>
+          </div>
+        </fieldset>
 
-    <div class="control-card shadow-soft">
-      <h6>Assets</h6>
-      <ul class="control-list scrollable-y" id="assetList">
-        <% (twin.assets || []).forEach((asset) => { %>
-        <li data-asset-id="<%= asset.asset_id %>">
-          <span><i class="bi bi-box-seam me-1 text-secondary"></i><%= asset.asset_id %></span>
-          <button class="btn btn-sm btn-outline-light" data-focus-asset="<%= asset.asset_id %>">Focus</button>
-        </li>
-        <% }) %>
-        <% if (!(twin.assets || []).length) { %>
-        <li class="text-secondary">Aucun asset modélisé pour l'instant.</li>
-        <% } %>
-      </ul>
+        <button class="btn btn-success" type="submit"><i class="bi bi-send-fill me-2"></i>Envoyer</button>
+      </form>
     </div>
   </aside>
 </section>
@@ -115,6 +118,7 @@
 <script nonce="<%= nonce %>">
 window.__TWIN__ = {
   csrfToken: '<%= csrfToken %>',
-  twin: <%- JSON.stringify(twin || {}) %>
+  twin: <%- JSON.stringify(twin || {}) %>,
+  modelRoot: '<%= modelRoot %>'
 };
 </script>

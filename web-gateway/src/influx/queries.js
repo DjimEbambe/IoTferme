@@ -28,7 +28,7 @@ const aggFn = (aggregate) => {
   }
 };
 
-const sanitizeIdent = (value) => value.replace(/[^a-zA-Z0-9_:\-]/g, '');
+const sanitizeIdent = (value) => value.replace(/[^-a-zA-Z0-9_:]/g, '');
 const sanitizeLiteral = (value) => value.replace(/'/g, "''");
 
 export const fetchAssetMetricSeries = async ({ metric, assetId, range = '24h' }) => {

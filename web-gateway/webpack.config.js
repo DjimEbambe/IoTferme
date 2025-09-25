@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +57,7 @@ export default {
         ],
       },
       {
-        test: /\.(png|jpe?g|gif|svg|woff2?|ttf)$/i,
+        test: /\.(png|jpe?g|gif|svg|woff2?|ttf|glb|gltf)$/i,
         type: 'asset',
       },
     ],
@@ -67,6 +68,15 @@ export default {
       fileName: 'manifest.json',
       publicPath: '/dist/',
       writeToFileEmit: true,
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'src/public/twins'),
+          to: 'twins',
+          noErrorOnMissing: true,
+        },
+      ],
     }),
   ],
   optimization: {

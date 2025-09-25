@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getTwinState } from '../../dao/services/twin.service.js';
 import { asyncHandler } from '../../utils/errors.js';
+import { isProd } from '../../config/env.js';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.get('/', asyncHandler(async (req, res) => {
     nonce: res.locals.cspNonce,
     csrfToken: res.locals.csrfToken,
     twin,
+    modelRoot: isProd ? '/dist/twins/' : '/twins/',
   });
 }));
 

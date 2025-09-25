@@ -1,11 +1,7 @@
 import crypto from 'crypto';
 import helmet from 'helmet';
 
-const scriptSrc = [
-  "'self'",
-  'https://cdn.jsdelivr.net',
-  'https://cdnjs.cloudflare.com',
-];
+const scriptSrc = ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'];
 
 const styleSrc = [
   "'self'",
@@ -15,11 +11,7 @@ const styleSrc = [
   "'unsafe-inline'",
 ];
 
-const fontSrc = [
-  "'self'",
-  'https://cdn.jsdelivr.net',
-  'https://fonts.gstatic.com',
-];
+const fontSrc = ["'self'", 'https://cdn.jsdelivr.net', 'https://fonts.gstatic.com'];
 
 export const cspMiddleware = (nonceSecret) => {
   if (!nonceSecret) {

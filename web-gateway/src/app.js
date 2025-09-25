@@ -86,7 +86,13 @@ export const createApp = async () => {
   app.use(helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: false, setIf: () => isProd }));
   app.use(cspMiddleware(env.cspNonceSecret));
   app.use(helmet.hidePoweredBy());
-  app.use(compression());
+  const compressionFilter = (req, res) => {
+    if (req.path.endsWith('.glb') || req.path.endsWith('.gltf')) {
+      return false;
+    }
+    return compression.filter(req, res);
+  };
+  app.use(compression({ filter: compressionFilter }));
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(
@@ -103,7 +109,19 @@ export const createApp = async () => {
   app.use(passport.session());
   app.use(exposeUser);
 
-  app.use(express.static(path.join(__dirname, 'public'), { maxAge: isProd ? '7d' : 0 }));
+  const staticMaxAge = isProd ? '7d' : 0;
+  const setModelHeaders = (res, servedPath) => {
+    if (servedPath.endsWith('.glb')) {
+      res.setHeader('Content-Type', 'model/gltf-binary');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('Accept-Ranges', 'bytes');
+    } else if (servedPath.endsWith('.gltf')) {
+      res.setHeader('Content-Type', 'model/gltf+json');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  };
+  app.use(express.static(path.join(__dirname, 'public'), { maxAge: staticMaxAge, setHeaders: setModelHeaders }));
+  app.use('/twins', express.static(path.join(__dirname, 'public', 'twins'), { maxAge: staticMaxAge, setHeaders: setModelHeaders }));
   app.use(assetsMiddleware);
 
   app.use(csrfProtection);
