@@ -4,6 +4,25 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
   dotenv.config();
 }
 
+const defaults = {
+  PORT: 8000,
+  BASE_URL: 'https://iotfarm.local',
+  MONGO_URI: 'mongodb://mongo-prod:27017/iotfarm',
+  REDIS_URL: 'redis://redis-prod:6379',
+  INFLUX_URL: 'http://influx-prod:8086',
+  INFLUX_ORG: 'iotfarm',
+  INFLUX_BUCKET_RAW: 'iot_raw',
+  INFLUX_BUCKET_1M: 'iot_agg_1m',
+  INFLUX_BUCKET_5M: 'iot_agg_5m',
+  MQTT_URL: 'mqtt://mqtt-prod:1883',
+  MQTT_USERNAME: 'iotfarm_worker',
+  ML_API_URL: 'http://ml-prod:8002',
+  RATE_LIMIT_WINDOW_MS: 60000,
+  RATE_LIMIT_MAX: 120,
+  TZ: 'Africa/Kinshasa',
+  RBAC_DEFAULT_ROLE: 'visitor',
+};
+
 const stageName = (process.env.IOTFARM_ENV || process.env.NODE_ENV || 'development').toLowerCase();
 const stageToken = stageName.replace(/[^a-z0-9]/gi, '_').toUpperCase();
 
@@ -13,7 +32,7 @@ const resolveStageValue = (key) => {
   return process.env[key];
 };
 
-const required = (key, fallback) => {
+const required = (key, fallback = defaults[key]) => {
   const value = resolveStageValue(key);
   if (value !== undefined && value !== '') return value;
   if (fallback !== undefined) return fallback;
@@ -21,10 +40,11 @@ const required = (key, fallback) => {
   throw new Error(`Missing required env var ${key} (stage override checked: ${stageKey})`);
 };
 
-const optional = (key, fallback) => {
+const optional = (key, fallback = defaults[key]) => {
   const value = resolveStageValue(key);
   if (value !== undefined) return value;
-  return fallback;
+  if (fallback !== undefined) return fallback;
+  return undefined;
 };
 
 const requiredNumber = (key, fallback) => {
@@ -68,9 +88,9 @@ export const env = {
     windowMs: requiredNumber('RATE_LIMIT_WINDOW_MS', 60000),
     max: requiredNumber('RATE_LIMIT_MAX', 120),
   },
-  timezone: optional('TZ', 'Africa/Kinshasa'),
+  timezone: optional('TZ'),
   cspNonceSecret: required('CSP_NONCE_SECRET'),
-  rbacDefaultRole: optional('RBAC_DEFAULT_ROLE', 'visitor'),
+  rbacDefaultRole: optional('RBAC_DEFAULT_ROLE'),
 };
 
 export const isProd = env.nodeEnv === 'production';
