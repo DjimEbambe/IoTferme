@@ -3,7 +3,26 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const ensureTrailingSlash = (value) => (value && !value.endsWith('/') ? `${value}/` : value || '/');
-const MODEL_ROOT = ensureTrailingSlash((typeof window !== 'undefined' && window.__TWIN__?.modelRoot) || '/twins/');
+
+const DEFAULT_MODEL_ROOT = ensureTrailingSlash((typeof window !== 'undefined' && window.__TWIN__?.modelRoot) || '/twins/');
+const FALLBACK_MODEL_ROOTS = ['/dist/twins/', '/twins/'];
+const windowOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
+const toAbsoluteRoot = (value) => {
+  if (!value) return null;
+  const normalized = ensureTrailingSlash(value);
+  if (!windowOrigin) return normalized;
+  try {
+    return ensureTrailingSlash(new URL(normalized, windowOrigin).toString());
+  } catch (error) {
+    return normalized;
+  }
+};
+
+const MODEL_ROOTS = Array.from(
+  new Set([DEFAULT_MODEL_ROOT, ...FALLBACK_MODEL_ROOTS].map(toAbsoluteRoot).filter(Boolean))
+);
+if (!MODEL_ROOTS.length) MODEL_ROOTS.push('/twins/');
 
 const normalizeKey = (value) => {
   if (value === undefined || value === null) return '';
@@ -67,25 +86,67 @@ const canonicalAssetId = (asset) => {
 
 const loader = new GLTFLoader();
 const modelCache = new Map();
+const resolvedModelBase = new Map();
 
-const loadGLB = (file, scene) => new Promise((resolve, reject) => {
-  const url = `${MODEL_ROOT}${file}`;
-  loader.load(
-    url,
-    (gltf) => {
-      const root = new THREE.Group();
-      root.add(gltf.scene);
-      gltf.scene.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      resolve(root);
-    },
-    undefined,
-    (error) => reject(error)
-  );
+const resolveModelUrl = (base, file) => {
+  try {
+    return new URL(file, base).toString();
+  } catch (error) {
+    return `${ensureTrailingSlash(base)}${file}`;
+  }
+};
+
+const candidateBasesFor = (file) => {
+  const ordered = [];
+  const preferred = resolvedModelBase.get(file);
+  if (preferred) ordered.push(preferred);
+  MODEL_ROOTS.forEach((root) => {
+    if (!ordered.includes(root)) ordered.push(root);
+  });
+  return ordered;
+};
+
+const loadGLB = (file) => new Promise((resolve, reject) => {
+  const attempts = [];
+  const bases = candidateBasesFor(file);
+
+  const attempt = (index) => {
+    if (index >= bases.length) {
+      const error = new Error(`Failed to load model ${file}`);
+      error.name = 'ModelLoadError';
+      error.file = file;
+      error.attempts = attempts;
+      reject(error);
+      return;
+    }
+
+    const base = bases[index];
+    const url = resolveModelUrl(base, file);
+
+    loader.load(
+      url,
+      (gltf) => {
+        const root = new THREE.Group();
+        root.add(gltf.scene);
+        gltf.scene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        resolvedModelBase.set(file, base);
+        resolve(root);
+      },
+      undefined,
+      (error) => {
+        const status = error?.target?.status ?? null;
+        attempts.push({ base, url, status, message: error?.message || error?.toString?.() || 'Unknown error' });
+        attempt(index + 1);
+      }
+    );
+  };
+
+  attempt(0);
 });
 
 const getModel = async (key) => {
@@ -194,7 +255,31 @@ export const initTwinScene = ({ twin, showToast }) => {
 
   const overlayMeshes = new Map();
   const rootNodes = [];
+  const missingModels = new Set();
+  const modelLoadErrors = [];
   let heatmapMode = null;
+
+  const createFallbackBlock = (color) => {
+    const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({
+      color: color.clone(),
+      transparent: true,
+      opacity: 0.28,
+      metalness: 0.05,
+      roughness: 0.85,
+      wireframe: true,
+    });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(20, 12, 20), material);
+    mesh.position.y = 6;
+    group.add(mesh);
+    group.userData.placeholder = true;
+    return group;
+  };
+
+  const rememberModelFailure = (file, error) => {
+    if (file) missingModels.add(file);
+    modelLoadErrors.push({ file, error });
+  };
 
   const loadEnvironment = async () => {
     try {
@@ -205,7 +290,7 @@ export const initTwinScene = ({ twin, showToast }) => {
       return environment;
     } catch (error) {
       console.error('[twin] three load env', error);
-      showToast?.('Jumeau', "Impossible de charger la scène 3D", 'danger');
+      rememberModelFailure(error?.file || MODEL_LIBRARY.environment.file, error);
       return null;
     }
   };
@@ -227,6 +312,7 @@ export const initTwinScene = ({ twin, showToast }) => {
     rootNodes.push(pivot);
 
     let object3D = null;
+    const overlayColor = DEFAULT_COLORS[canonical] || DEFAULT_COLORS.default;
     if (canonical === 'SUP:PROV') {
       object3D = createCouveuseCube();
     } else {
@@ -234,6 +320,8 @@ export const initTwinScene = ({ twin, showToast }) => {
         object3D = await getModel(canonical);
       } catch (error) {
         console.warn('[twin] three asset load', canonical, error);
+        rememberModelFailure(error?.file || MODEL_LIBRARY[canonical]?.file, error);
+        object3D = createFallbackBlock(overlayColor);
       }
     }
 
@@ -242,7 +330,6 @@ export const initTwinScene = ({ twin, showToast }) => {
       rootNodes.push(object3D);
     }
 
-    const overlayColor = DEFAULT_COLORS[canonical] || DEFAULT_COLORS.default;
     const overlay = computeOverlay(object3D || pivot, overlayColor);
     if (overlay) {
       overlay.userData.asset = canonicalAsset;
@@ -262,8 +349,24 @@ export const initTwinScene = ({ twin, showToast }) => {
 
   const loadingTasks = [loadEnvironment(), ...assets.map((entry, index) => loadAsset(entry, index))];
 
+  const formatMissingList = (list) => {
+    if (!list.length) return '';
+    if (list.length === 1) return list[0];
+    if (list.length === 2) return `${list[0]} et ${list[1]}`;
+    return `${list.slice(0, -1).join(', ')} et ${list[list.length - 1]}`;
+  };
+
   Promise.allSettled(loadingTasks).then(() => {
-    fitCameraToObjects(camera, controls, rootNodes);
+    if (rootNodes.length) fitCameraToObjects(camera, controls, rootNodes);
+    if (missingModels.size) {
+      const files = Array.from(missingModels);
+      showToast?.('Jumeau', `Erreur de chargement de fichier : ${formatMissingList(files)}`, 'danger');
+      console.error('[twin] model load failures', modelLoadErrors);
+      window.__TwinSceneState = {
+        ...(window.__TwinSceneState || {}),
+        modelLoadErrors,
+      };
+    }
   });
 
   const applyHeatmap = (mode) => {

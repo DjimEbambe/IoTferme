@@ -42,20 +42,6 @@ make dev        # lance web-gateway (nodemon) + iot-streamer + ml-engine
 npm run watch:client --prefix web-gateway   # rebuild bundles front
 ```
 
-### Variables multi-environnements
-
-Les services lisent automatiquement les variantes selon `IOTFARM_ENV` ou `NODE_ENV`.
-
-Exemple :
-
-```
-IOTFARM_ENV=staging
-MONGO_URI_STAGING=mongodb://mongo-staging.internal:27017/iotfarm
-MONGO_URI_PRODUCTION=mongodb://mongo-prod.internal:27017/iotfarm
-```
-
-Si `MONGO_URI_STAGING` est présent et que `IOTFARM_ENV=staging`, il sera utilisé à la place de `MONGO_URI`. Même logique pour Redis, Influx, MQTT, etc. (suffixe `_PRODUCTION`, `_STAGING`, `_DEVELOPMENT`, etc.).
-
 ### Seeds et données de démo
 
 ```bash

@@ -49,19 +49,6 @@ SOCKET_IO_KEY=...
 
 Voir `src/config/env.js` pour la liste complète. Pensez à synchroniser avec les autres services (iot-streamer, ml-engine).
 
-### Astuce multi-stades
-
-Pour déployer sur plusieurs environnements, fournissez des variantes suffixées :
-
-```
-IOTFARM_ENV=production
-MONGO_URI_PRODUCTION=mongodb://mongo-prod:27017/iotfarm
-MONGO_URI_STAGING=mongodb://mongo-staging:27017/iotfarm
-REDIS_URL_PRODUCTION=redis://redis-prod:6379
-```
-
-Si `IOTFARM_ENV=production`, les clés `_PRODUCTION` sont utilisées automatiquement (sinon `MONGO_URI`, `REDIS_URL`, etc.).
-
 ## Tests
 
 ```bash

@@ -13,22 +13,4 @@ module.exports = {
   rules: {
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
-  overrides: [
-    {
-      files: ['src/frontend/**/*.js'],
-      env: {
-        browser: true,
-      },
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        localStorage: 'readonly',
-        navigator: 'readonly',
-        performance: 'readonly',
-        fetch: 'readonly',
-        requestAnimationFrame: 'readonly',
-        cancelAnimationFrame: 'readonly',
-      },
-    },
-  ],
 };

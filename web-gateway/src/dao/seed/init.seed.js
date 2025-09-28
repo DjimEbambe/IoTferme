@@ -63,6 +63,14 @@ export const seedInitialData = async () => {
     { upsert: true }
   );
 
+  try {
+    await BuildingModel.collection.dropIndex('buildingId_1');
+  } catch (error) {
+    if (error?.codeName !== 'IndexNotFound') {
+      console.warn('[seed] unable to drop legacy buildingId index', error.message);
+    }
+  }
+
   const buildings = [
     {
       building_id: 'BLDG:A',
